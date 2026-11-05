@@ -1,0 +1,12 @@
+import {useEffect,useRef} from 'react';
+import {ArrowDownLeft,ArrowUpRight,X,Quote,ArrowRight} from 'lucide-react';
+import type {Edge} from '@xyflow/react';
+import type {Concept} from '../types';
+import {CategoryBadge} from './CategoryBadge';
+export function NodeInspector({node,nodes,edges,onClose,onSelect,onShowChat}:{node:Concept|undefined;nodes:Concept[];edges:Edge[];onClose:()=>void;onSelect:(id:string)=>void;onShowChat:(id:string)=>void}){
+ const drawer=useRef<HTMLElement>(null);const open=Boolean(node);
+ useEffect(()=>{if(!open)return;const previous=document.activeElement as HTMLElement|null;drawer.current?.focus();return()=>{if(previous?.isConnected)previous.focus();};},[open]);
+ useEffect(()=>{if(!open)return;const handler=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler);},[open,onClose]);
+ const connections=node?edges.filter(e=>e.source===node.id||e.target===node.id):[];
+ return <aside ref={drawer} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Concept details" aria-hidden={!open} className={`inspector ${open?'open':''}`}>{node&&<><div className="inspector-top"><span className="eyebrow">CONCEPT DETAILS</span><button className="icon-button" onClick={onClose} aria-label="Close concept details"><X size={18}/></button></div><CategoryBadge category={node.data.category}/><h2>{node.data.label}</h2><section><h3>Overview</h3><p>{node.data.summary||'No summary available.'}</p></section><section><h3><Quote size={14}/> In the conversation</h3><blockquote>{node.data.quote||'No excerpt available.'}</blockquote><button className="text-button" onClick={()=>onShowChat(node.data.firstSeenMessageId)}>Show in chat <ArrowRight size={14}/></button></section><section><h3>Connected concepts <span>{connections.length}</span></h3><div className="connections">{connections.length?connections.map(e=>{const outgoing=e.source===node.id;const neighbor=nodes.find(n=>n.id===(outgoing?e.target:e.source));return neighbor&&<button key={e.id} onClick={()=>onSelect(neighbor.id)}><div className="relation">{outgoing?<ArrowUpRight size={14}/>:<ArrowDownLeft size={14}/>} {String(e.data?.relationship??'relates_to').replace('_',' ')}</div><strong>{neighbor.data.label}</strong><CategoryBadge category={neighbor.data.category}/></button>;}):<p>No connections yet.</p>}</div></section></>}</aside>;
+}
